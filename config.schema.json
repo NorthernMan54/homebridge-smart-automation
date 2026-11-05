@@ -1,0 +1,47 @@
+{
+  "pluginAlias": "smart-automation",
+  "pluginType": "platform",
+  "singular": true,
+  "customUi": true,
+  "customUiPath": "./dist/homebridge-ui",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Smart Automations"
+      },
+      "debug": {
+        "title": "Debug logging",
+        "type": "boolean",
+        "default": false
+      },
+      "smartAutomations": {
+        "title": "Automations",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "type": {
+              "type": "string",
+              "enum": ["average-temperature", "door-ajar", "humidity-control", "security-system", "smart-light-group"]
+            },
+            "enabled": { "type": "boolean" },
+            "uniqueIds": { "type": "array", "items": { "type": "string" } },
+            "targetUniqueId": { "type": "string" },
+            "lightbulbType": { "type": "string", "enum": ["on-off", "dimmable", "colour", "temperature"] },
+            "openMinutes": { "type": "integer" },
+            "repeatMinutes": { "type": "integer" },
+            "onHumidity": { "type": "integer" },
+            "offHumidity": { "type": "integer" },
+            "removeAfterMinutes": { "type": "integer" },
+            "autoBypass": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

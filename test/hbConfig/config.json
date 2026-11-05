@@ -1,0 +1,7 @@
+{
+  "bridge": { "name": "SmartAutomationDev", "username": "0E:AA:BB:CC:DD:01", "port": 51871, "pin": "031-45-154" },
+  "platforms": [
+    { "platform": "config", "name": "Config", "port": 8591, "auth": "none" },
+    { "platform": "smart-automation", "name": "Smart Automations", "smartAutomations": [] }
+  ]
+}

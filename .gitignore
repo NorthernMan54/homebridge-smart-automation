@@ -1,0 +1,7 @@
+node_modules/
+dist/
+coverage/
+*.log
+.homebridge-dev/
+test/hbConfig/*
+!test/hbConfig/config.json

@@ -1,0 +1,41 @@
+name: Build, Lint and Test
+
+on: [push, pull_request]
+
+concurrency:
+  group: build_lint_and_test
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, Lint and Test on Node.js ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # the Node.js versions to build on
+        node-version: [lts/*, lts/-1, lts/-2]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Use Node.js ${{ matrix.node-version }} 
+        id: setup-node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies ${{ steps.setup-node.outputs.node-version }}
+        run: npm install
+
+      - name: Lint the project ${{ steps.setup-node.outputs.node-version }} 
+        run: npm run lint
+
+      - name: Build the project ${{ steps.setup-node.outputs.node-version }}
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Test the project ${{ steps.setup-node.outputs.node-version }}
+        run: npm run test

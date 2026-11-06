@@ -1,5 +1,6 @@
 import type { PickerService } from '../homebridge-ui/accessory-lister.js'
 import type { AutomationType, Draft } from './automation.js'
+import type { AccessoryLayoutRoom } from './rooms.js'
 
 import { useState } from 'preact/hooks'
 
@@ -10,6 +11,7 @@ import { Picker } from './Picker.js'
 interface EditorProps {
   initial: Draft
   services: PickerService[]
+  rooms?: AccessoryLayoutRoom[] | null
   accessoryNotice: any
   onCancel: () => void
   onApply: (draft: Draft) => void
@@ -33,7 +35,7 @@ const SOURCE_TITLES: Record<AutomationType, string> = {
   'smart-light-group': 'picker.lights',
 }
 
-export function Editor({ initial, services, accessoryNotice, onCancel, onApply }: EditorProps) {
+export function Editor({ initial, services, rooms, accessoryNotice, onCancel, onApply }: EditorProps) {
   const [draft, setDraft] = useState<Draft>(initial)
   const update = (changes: Partial<Draft>) => setDraft(current => ({
     ...current,
@@ -140,6 +142,7 @@ export function Editor({ initial, services, accessoryNotice, onCancel, onApply }
           : t('picker.selected_count', { count: draft.uniqueIds.length })}
         single={isSingleSource(draft.type)}
         services={services.filter(service => isSourceSelectable(service, draft))}
+        rooms={rooms}
         selected={draft.uniqueIds}
         onChange={onSource}
       />
@@ -150,6 +153,7 @@ export function Editor({ initial, services, accessoryNotice, onCancel, onApply }
           badge={t(draft.targetUniqueId ? 'status.selected' : 'status.required')}
           single
           services={services.filter(service => isControlTarget(service, draft))}
+          rooms={rooms}
           selected={draft.targetUniqueId
             ? [draft.targetUniqueId]
             : []}

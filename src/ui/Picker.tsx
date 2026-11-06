@@ -1,8 +1,10 @@
 import type { PickerService } from '../homebridge-ui/accessory-lister.js'
+import type { AccessoryLayoutRoom } from './rooms.js'
 
 import { useMemo, useState } from 'preact/hooks'
 
 import { t } from './i18n.js'
+import { groupByRoom, groupByType } from './rooms.js'
 
 interface PickerProps {
   title: string
@@ -10,28 +12,24 @@ interface PickerProps {
   name: string
   single: boolean
   services: PickerService[]
+  /** The user's room layout, or null when the Homebridge UI cannot share it. */
+  rooms?: AccessoryLayoutRoom[] | null
   selected: string[]
   onChange: (uniqueId: string, selected: boolean) => void
 }
 
-/** Accessories grouped by type, because room layouts are not available to a plugin. */
-export function Picker({ title, badge, name, single, services, selected, onChange }: PickerProps) {
+/** Accessories grouped by the user's rooms, or by type when the Homebridge UI cannot share its rooms. */
+export function Picker({ title, badge, name, single, services, rooms, selected, onChange }: PickerProps) {
   const [search, setSearch] = useState('')
   const groups = useMemo(() => {
     const term = search.trim().toLowerCase()
-    const grouped = new Map<string, PickerService[]>()
-    for (const service of services) {
-      if (!term || service.serviceName.toLowerCase().includes(term) || service.bridge.toLowerCase().includes(term)) {
-        grouped.set(service.type, [
-          ...(grouped.get(service.type) || []),
-          service,
-        ])
-      }
-    }
-    return [
-      ...grouped.entries(),
-    ].sort(([a], [b]) => a.localeCompare(b))
-  }, [services, search])
+    const matching = term
+      ? services.filter(service => service.serviceName.toLowerCase().includes(term) || service.bridge.toLowerCase().includes(term))
+      : services
+    return rooms
+      ? groupByRoom(matching, rooms, t('picker.default_room'))
+      : groupByType(matching)
+  }, [services, rooms, search])
   const missing = selected.filter(id => !services.some(service => service.uniqueId === id)).length
 
   return (
@@ -50,10 +48,10 @@ export function Picker({ title, badge, name, single, services, selected, onChang
       />
       {missing > 0 && <small class="form-text grey-text d-block mb-2">{t('picker.missing', { count: missing })}</small>}
       <div class="list-group-item sa-chooser">
-        {groups.map(([type, group]) => (
-          <div class="mb-2" key={type}>
-            <div class="fw-semibold">{type}</div>
-            {group.map((service) => {
+        {groups.map(group => (
+          <div class="mb-2" key={group.name}>
+            <div class="fw-semibold">{group.name}</div>
+            {group.services.map((service) => {
               const id = `${name}-${service.uniqueId}`
               return (
                 <div class="form-check" key={service.uniqueId}>
@@ -67,6 +65,12 @@ export function Picker({ title, badge, name, single, services, selected, onChang
                   />
                   <label class="form-check-label" for={id}>
                     {service.serviceName}
+                    {rooms && (
+                      <span class="grey-text small">
+                        {' · '}
+                        {service.type}
+                      </span>
+                    )}
                     {service.bridge && (
                       <span class="grey-text small">
                         {' · '}

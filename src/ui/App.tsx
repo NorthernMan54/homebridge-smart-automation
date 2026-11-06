@@ -1,6 +1,7 @@
 import type { PickerService } from '../homebridge-ui/accessory-lister.js'
 import type { SmartAutomationConfig } from '../smart-automation.interfaces.js'
 import type { Draft } from './automation.js'
+import type { AccessoryLayoutRoom } from './rooms.js'
 
 import { useEffect, useState } from 'preact/hooks'
 
@@ -14,6 +15,8 @@ export interface HomebridgeUi {
   getPluginConfig: () => Promise<any[]>
   updatePluginConfig: (config: any[]) => Promise<any[]>
   request: (path: string, body?: unknown) => Promise<any>
+  /** Added in plugin-ui-utils 2.2.8, which the Homebridge UI supplies; older UIs do not have it. */
+  getAccessoryLayout?: () => Promise<AccessoryLayoutRoom[]>
   toast: { error: (message: string, title?: string) => void }
 }
 
@@ -62,6 +65,7 @@ export function App({ homebridge }: { homebridge: HomebridgeUi }) {
   const [draft, setDraft] = useState<Draft | null>(null)
   const [dirty, setDirty] = useState(false)
   const [services, setServices] = useState<PickerService[]>([])
+  const [rooms, setRooms] = useState<AccessoryLayoutRoom[] | null>(null)
   const [accessories, setAccessories] = useState<{ state: 'loading' | 'ready' | 'error', message?: string }>({ state: 'loading' })
   const accessoriesEnabled = homebridge.serverEnv?.env?.enableAccessories !== false
 
@@ -79,9 +83,25 @@ export function App({ homebridge }: { homebridge: HomebridgeUi }) {
     }
   }
 
+  // Without the user's rooms the picker groups by type, so a failure here is not an error.
+  const loadRooms = async () => {
+    if (typeof homebridge.getAccessoryLayout !== 'function') {
+      return
+    }
+    try {
+      const layout = await homebridge.getAccessoryLayout()
+      setRooms(Array.isArray(layout)
+        ? layout
+        : null)
+    } catch {
+      setRooms(null)
+    }
+  }
+
   useEffect(() => {
     void homebridge.getPluginConfig().then(([current]) => setBlock(current || {}))
     void loadServices()
+    void loadRooms()
   }, [])
 
   if (!block) {
@@ -129,6 +149,7 @@ export function App({ homebridge }: { homebridge: HomebridgeUi }) {
       <Editor
         initial={draft}
         services={services}
+        rooms={rooms}
         accessoryNotice={accessoryNotice}
         onCancel={() => setDraft(null)}
         onApply={(edited) => {

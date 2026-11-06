@@ -19,6 +19,8 @@ A rules engine for Homebridge that watches and controls your existing accessorie
 
 Open the plugin's settings, choose **Add automation**, pick a type and its accessories, then choose **Save**. Homebridge then offers to restart the plugin so the changes take effect.
 
+The accessory picker groups accessories by the rooms you set up on the Homebridge UI's Accessories page. With a Homebridge UI that is too old to share its rooms, it groups them by accessory type instead.
+
 ## Development
 
 ```sh

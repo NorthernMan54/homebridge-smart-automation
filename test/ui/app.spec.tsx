@@ -125,6 +125,42 @@ describe('app', () => {
     await waitFor(() => expect(screen.queryByLabelText(/Porch/)).toBeNull())
   })
 
+  it('groups the picker by the user\'s rooms when the host shares them', async () => {
+    const homebridge = {
+      ...host(),
+      getAccessoryLayout: vi.fn(async () => [
+        {
+          name: 'Outside',
+          services: [
+            { uniqueId: 'b' },
+          ],
+        },
+        { name: 'Default Room', isDefault: true, services: [] },
+      ]),
+    }
+    render(<App homebridge={homebridge} />)
+    fireEvent.click(await screen.findByText('Add automation'))
+
+    expect(await screen.findByText('Outside')).toBeTruthy()
+    expect(screen.getByText('Default Room')).toBeTruthy()
+    expect(screen.queryByText('Lightbulb')).toBeNull()
+    expect(screen.getAllByText(/· Lightbulb/)).toHaveLength(2)
+  })
+
+  it('groups the picker by type when the host has no room layout or it fails', async () => {
+    const homebridge = {
+      ...host(),
+      getAccessoryLayout: vi.fn(async () => {
+        throw new Error('no layout')
+      }),
+    }
+    render(<App homebridge={homebridge} />)
+    fireEvent.click(await screen.findByText('Add automation'))
+
+    expect(await screen.findByText('Lightbulb')).toBeTruthy()
+    expect(screen.queryByText('Default Room')).toBeNull()
+  })
+
   it('explains when accessories cannot be listed, and can retry', async () => {
     const homebridge = host()
     homebridge.request.mockRejectedValueOnce(new Error('boom'))

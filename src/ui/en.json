@@ -52,6 +52,7 @@
   "name_suffix.smart-light-group": "Group",
   "notice.unsaved": "You have unsaved changes. Choose Save to keep them; Homebridge will then offer to restart the Smart Automations bridge.",
   "picker.control_target": "Choose an air conditioner or control",
+  "picker.default_room": "Default Room",
   "picker.door": "Choose a door",
   "picker.humidity_sensor": "Choose a humidity sensor",
   "picker.lights": "Choose lights",

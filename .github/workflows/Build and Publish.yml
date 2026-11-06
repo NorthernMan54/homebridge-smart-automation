@@ -85,3 +85,33 @@ jobs:
         generate_release_notes: true
         draft: false
         prerelease: false
+
+  release_summary:
+    name: Release Summary
+    needs: [get_tags, publish_prod_release, publish_test_release]
+    if: ${{ always() && (needs.publish_prod_release.result == 'success' || needs.publish_test_release.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Write release summary
+      env:
+        PACKAGE: homebridge-smart-automation
+        VERSION: ${{ needs.publish_prod_release.outputs.NPM_VERSION || needs.publish_test_release.outputs.NPM_VERSION }}
+        DIST_TAG: ${{ needs.publish_prod_release.result == 'success' && 'latest' || needs.get_tags.outputs.TARGET_IMAGE_TAG }}
+        BRANCH: ${{ needs.get_tags.outputs.BRANCH_NAME }}
+      run: |
+        {
+          echo "## Published ${PACKAGE}@${VERSION}"
+          echo
+          echo "| | |"
+          echo "|---|---|"
+          echo "| Version | \`${VERSION}\` |"
+          echo "| npm tag | \`${DIST_TAG}\` |"
+          echo "| Branch | \`${BRANCH}\` |"
+          echo "| npm | [${PACKAGE}@${VERSION}](https://www.npmjs.com/package/${PACKAGE}/v/${VERSION}) |"
+          echo
+          echo "Install with:"
+          echo
+          echo '```sh'
+          echo "npm install ${PACKAGE}@${VERSION}"
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"

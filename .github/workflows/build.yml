@@ -3,7 +3,7 @@ name: Build, Lint and Test
 on: [push, pull_request]
 
 concurrency:
-  group: build_lint_and_test
+  group: build_lint_and_test-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

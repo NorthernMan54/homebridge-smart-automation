@@ -122,7 +122,27 @@ function toHumidity(value: unknown, fallback: number): number {
  * @param draft - the editor state
  * @param id - generates an id for a new rule
  */
-export function toAutomation(draft: Draft, id: () => string = () => globalThis.crypto.randomUUID()): SmartAutomationConfig {
+/**
+ * A random v4 UUID for a new rule.
+ *
+ * ⚠️ `crypto.randomUUID` only exists in a secure context (HTTPS or localhost),
+ * and the Homebridge UI is usually opened over plain http on a LAN address,
+ * where calling it throws and the Create button silently does nothing.
+ * `getRandomValues` is available everywhere.
+ * @param crypto - the Web Crypto object, replaceable in tests
+ */
+export function newId(crypto: Partial<Crypto> = globalThis.crypto): string {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  const bytes = crypto.getRandomValues!(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0F) | 0x40
+  bytes[8] = (bytes[8] & 0x3F) | 0x80
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+export function toAutomation(draft: Draft, id: () => string = () => newId()): SmartAutomationConfig {
   const uniqueIds = [
     ...new Set(draft.uniqueIds),
   ]

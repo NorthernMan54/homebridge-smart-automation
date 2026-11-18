@@ -1,5 +1,5 @@
 import type { PickerService } from '../homebridge-ui/accessory-lister.js'
-import type { SmartAutomationConfig } from '../smart-automation.interfaces.js'
+import type { ChristmasPattern, SmartAutomationConfig } from '../smart-automation.interfaces.js'
 
 import { PLUGIN_NAME } from '../settings.js'
 
@@ -19,10 +19,14 @@ export interface Draft {
   offHumidity?: number
   removeAfterMinutes?: number
   autoBypass?: boolean
+  pattern?: ChristmasPattern
+  stepSeconds?: number
+  brightness?: number
 }
 
 export const AUTOMATION_TYPES: AutomationType[] = [
   'average-temperature',
+  'christmas-lights',
   'door-ajar',
   'humidity-control',
   'security-system',
@@ -31,6 +35,7 @@ export const AUTOMATION_TYPES: AutomationType[] = [
 
 const SOURCE_TYPES: Record<AutomationType, string[]> = {
   'average-temperature': ['TemperatureSensor', 'Thermostat', 'HeaterCooler'],
+  'christmas-lights': ['Lightbulb'],
   'door-ajar': [
     'GarageDoorOpener',
     'Door',
@@ -46,6 +51,8 @@ const SOURCE_TYPES: Record<AutomationType, string[]> = {
 const REQUIRED_CHARACTERISTIC: Partial<Record<AutomationType, string>> = {
   'average-temperature': 'CurrentTemperature',
   'humidity-control': 'CurrentRelativeHumidity',
+  // Only colour lights can show a pattern
+  'christmas-lights': 'Hue',
 }
 
 const TARGET_TYPES = [
@@ -157,6 +164,15 @@ export function toAutomation(draft: Draft, id: () => string = () => globalThis.c
         type: draft.type,
         uniqueIds,
         autoBypass: draft.autoBypass === true,
+      }
+    case 'christmas-lights':
+      return {
+        ...shared,
+        type: draft.type,
+        uniqueIds,
+        pattern: draft.pattern || 'classic',
+        stepSeconds: Math.min(Math.max(Math.round(Number(draft.stepSeconds) || 2), 1), 60),
+        brightness: Math.min(Math.max(Math.round(Number(draft.brightness) || 100), 1), 100),
       }
     default:
       return {

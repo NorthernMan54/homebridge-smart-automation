@@ -186,25 +186,63 @@ describe('doorAjarRulesEngine', () => {
 
   it('keeps alerting while the door stays open', async () => {
     // ⚠️ HomeKit fires an automation on a change, so a repeat has to close the
-    // sensor before opening it again or only the first alert would ever run
-    vi.useFakeTimers()
+    // sensor before opening it again or only the first alert would ever run.
+    // Each 5 minute repeat is split: open for 2.5 minutes, closed for 2.5.
     const { engine, published, publish } = engineFor(0)
 
     await startEngine(engine, publish)
     await advance(engine, 10)
     expect(published).toEqual([false, true])
 
-    await advance(engine, 5)
-    vi.advanceTimersByTime(1000)
+    await advance(engine, 2)
+    expect(published).toEqual([false, true])
 
+    await advance(engine, 0.5)
+    expect(published).toEqual([false, true, false])
+
+    await advance(engine, 2)
+    expect(published).toEqual([false, true, false])
+
+    await advance(engine, 0.5)
     expect(published).toEqual([false, true, false, true])
 
-    await advance(engine, 5)
-    vi.advanceTimersByTime(1000)
-
+    await advance(engine, 2.5)
+    await advance(engine, 2.5)
     expect(published).toEqual([false, true, false, true, false, true])
     engine.stop()
-    vi.useRealTimers()
+  })
+
+  it('splits the repeat interval in half on its own timers', async () => {
+    vi.useFakeTimers()
+    const { engine, published, publish } = engineFor(0)
+
+    await startEngine(engine, publish)
+    clock += 10 * 60_000
+    await engine.tick()
+    expect(published).toEqual([false, true])
+
+    clock += 150_000
+    await vi.advanceTimersByTimeAsync(150_000)
+    expect(published).toEqual([false, true, false])
+
+    clock += 150_000
+    await vi.advanceTimersByTimeAsync(150_000)
+    expect(published).toEqual([false, true, false, true])
+    engine.stop()
+  })
+
+  it('clears an alert shut during the closed half without a duplicate update', async () => {
+    const { engine, published, publish, setDoor } = engineFor(0)
+
+    await startEngine(engine, publish)
+    await advance(engine, 10)
+    await advance(engine, 3)
+    expect(published).toEqual([false, true, false])
+
+    setDoor(1)
+    await engine.tick()
+    expect(published).toEqual([false, true, false])
+    engine.stop()
   })
 
   it('does not repeat before the repeat time is up', async () => {
@@ -214,7 +252,8 @@ describe('doorAjarRulesEngine', () => {
     await advance(engine, 10)
     await advance(engine, 4)
 
-    expect(published).toEqual([false, true])
+    // Closed for the second half of the interval, but not reopened yet
+    expect(published).toEqual([false, true, false])
     engine.stop()
   })
 

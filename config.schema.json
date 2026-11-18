@@ -27,7 +27,7 @@
             "name": { "type": "string" },
             "type": {
               "type": "string",
-              "enum": ["average-temperature", "door-ajar", "humidity-control", "security-system", "smart-light-group"]
+              "enum": ["average-temperature", "christmas-lights", "door-ajar", "humidity-control", "security-system", "smart-light-group"]
             },
             "enabled": { "type": "boolean" },
             "uniqueIds": { "type": "array", "items": { "type": "string" } },
@@ -38,7 +38,10 @@
             "onHumidity": { "type": "integer" },
             "offHumidity": { "type": "integer" },
             "removeAfterMinutes": { "type": "integer" },
-            "autoBypass": { "type": "boolean" }
+            "autoBypass": { "type": "boolean" },
+            "pattern": { "type": "string", "enum": ["classic", "candy-cane", "chase", "twinkle", "colour-cycle", "rainbow"] },
+            "stepSeconds": { "type": "integer" },
+            "brightness": { "type": "integer" }
           }
         }
       }

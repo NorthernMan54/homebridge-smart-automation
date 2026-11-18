@@ -1,3 +1,5 @@
+<p align="center"><img src="images/icon.svg" alt="" width="120"></p>
+
 # Homebridge Smart Automation
 
 A rules engine for Homebridge that watches and controls your existing accessories. Each rule is configured in the plugin's settings in the Homebridge UI.
@@ -5,6 +7,7 @@ A rules engine for Homebridge that watches and controls your existing accessorie
 | Automation | What it does |
 | --- | --- |
 | Smart Light Group | Publishes a light that turns on several lights together, then restores each light's earlier state when turned off |
+| Christmas Lights | Publishes a switch that runs a Christmas pattern across a row of colour lights, such as soffit pot lights, and restores them when turned off |
 | Door Left Ajar | Publishes a contact sensor that opens when a door stays open too long, for use as a Home app trigger |
 | Humidity-controlled AC | Turns a target on above one humidity threshold and off below another |
 | Average Temperature Sensor | Publishes the average of several temperature sensors |
@@ -32,3 +35,5 @@ npm run watch   # needs homebridge-config-ui-x installed globally
 ```
 
 This code was moved out of the `alpha-6.0.1` branch of [homebridge-config-ui-x](https://github.com/homebridge/homebridge-config-ui-x), where it began as a built-in feature.
+
+The icon is [Font Awesome](https://fontawesome.com) Free "wand-magic-sparkles", licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). It was the Smart Automations icon in the Homebridge UI sidebar.

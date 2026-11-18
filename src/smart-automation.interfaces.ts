@@ -59,7 +59,23 @@ export interface SecuritySystemConfig {
   enabled?: boolean
 }
 
-export type SmartAutomationConfig = SmartLightGroupConfig | DoorAjarConfig | HumidityControlConfig | AverageTemperatureConfig | SecuritySystemConfig
+export type ChristmasPattern = 'classic' | 'candy-cane' | 'chase' | 'twinkle' | 'colour-cycle' | 'rainbow'
+
+export interface ChristmasLightsConfig {
+  id: string
+  name: string
+  type: 'christmas-lights'
+  /** RGB lights in the order they run along the house. */
+  uniqueIds: string[]
+  pattern: ChristmasPattern
+  /** Seconds between pattern steps. */
+  stepSeconds: number
+  /** Brightness percentage for the pattern. */
+  brightness: number
+  enabled?: boolean
+}
+
+export type SmartAutomationConfig = SmartLightGroupConfig | DoorAjarConfig | HumidityControlConfig | AverageTemperatureConfig | SecuritySystemConfig | ChristmasLightsConfig
 
 export interface SmartAutomationAccessoryController {
   start?: () => Promise<void>

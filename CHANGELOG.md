@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
+- New Christmas Lights automation: a switch that, while on, runs a Christmas pattern (classic, candy cane, chase, warm twinkle, colour cycle or rainbow) across a row of colour lights such as soffit pot lights, then restores every light when turned off.
 - The accessory picker groups accessories by the rooms set up on the Homebridge UI's Accessories page, using `homebridge.getAccessoryLayout()` from plugin-ui-utils 2.2.8. Older Homebridge UIs still group by type.
+- Door Left Ajar: while the door stays open, each repeat interval is now split in half — the sensor stays open for the first half and closed for the second — instead of flicking closed for one second before each repeat.
 
 ## 0.1.0
 

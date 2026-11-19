@@ -337,7 +337,7 @@ export class SmartAutomationPlatform {
   }
 
   /**
-   * Publish the switch that runs a Christmas light pattern while on.
+   * Publish the on/off light that runs a Christmas light pattern while on.
    *
    * It always starts off after a restart, so the lights are never left
    * cycling with nothing saved to restore them to.
@@ -354,8 +354,9 @@ export class SmartAutomationPlatform {
       .setCharacteristic(Characteristic.Model, 'Smart Automation Christmas Lights')
       .setCharacteristic(Characteristic.SerialNumber, automation.id)
 
+    // Early betas published a Switch, which a cached accessory may still carry
     for (const legacyType of [
-      Service.Lightbulb,
+      Service.Switch,
       Service.ContactSensor,
       Service.TemperatureSensor,
       Service.SecuritySystem,
@@ -366,8 +367,20 @@ export class SmartAutomationPlatform {
       }
     }
 
-    const service = accessory.getService(Service.Switch) || accessory.addService(Service.Switch)
+    const service = accessory.getService(Service.Lightbulb) || accessory.addService(Service.Lightbulb)
     service.setCharacteristic(Characteristic.Name, automation.name)
+    // On/off only: a cached light group may have left colour or dimming behind
+    for (const extra of [
+      Characteristic.Brightness,
+      Characteristic.Hue,
+      Characteristic.Saturation,
+      Characteristic.ColorTemperature,
+    ]) {
+      const existing = service.characteristics.find((characteristic: any) => characteristic.UUID === extra.UUID)
+      if (existing) {
+        service.removeCharacteristic(existing)
+      }
+    }
     const on = service.getCharacteristic(Characteristic.On)
     on.removeAllListeners('set')
     on.updateValue(false)
@@ -385,7 +398,7 @@ export class SmartAutomationPlatform {
       stop: () => engine.stop(),
     })
     on.onSet(async (value: boolean) => {
-      this.log.info(`${automation.name}: switch received ${value ? 'On' : 'Off'}.`)
+      this.log.info(`${automation.name}: light received ${value ? 'On' : 'Off'}.`)
       await engine.setOn(Boolean(value))
       if (Boolean(value) !== engine.isRunning()) {
         on.updateValue(engine.isRunning())

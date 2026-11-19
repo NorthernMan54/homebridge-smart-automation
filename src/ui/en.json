@@ -9,7 +9,7 @@
   "action.enable": "Enable",
   "action.retry": "Try again",
   "description.average_temperature": "Publishes one temperature sensor containing the average of all selected temperature sensors. Sensors without a current numeric reading are ignored.",
-  "description.christmas_lights": "Publishes a switch. While it is on, the chosen colour lights run a Christmas pattern — ideal for pot lights in a soffit. Choose the lights in the order they run along the house so chasing patterns move the right way. Turning the switch off puts every light back the way it was.",
+  "description.christmas_lights": "Publishes a light. While it is on, the chosen colour lights run a Christmas pattern — ideal for pot lights in a soffit. Choose the lights in the order they run along the house so chasing patterns move the right way. Turning it off puts every light back the way it was.",
   "description.door_ajar": "Publishes a contact sensor for the chosen door. If the door is left open longer than the time below, the sensor opens — use that as the trigger for a Home app automation. While the door stays open it keeps alerting at the repeat interval, and it resets as soon as the door is closed.",
   "description.humidity_control": "Watches a humidity sensor and controls an air conditioner using separate on and off thresholds. The gap between the thresholds prevents rapid cycling: it turns on above the high threshold, stays unchanged between them, and turns off below the low threshold.",
   "description.security_system": "Publishes a HomeKit security system that can be armed in Stay, Away, or Night mode. While armed, any selected open contact sensor or active motion sensor triggers the alarm; disarming clears it.",

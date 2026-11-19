@@ -98,7 +98,7 @@ export function patternFrame(pattern: ChristmasPattern, step: number, count: num
 }
 
 /**
- * Christmas lights: a switch that, while on, runs a colour pattern across a
+ * Christmas lights: a light that, while on, runs a colour pattern across a
  * row of RGB lights (for example the pot lights in a soffit), then puts every
  * light back the way it was when it is turned off.
  */

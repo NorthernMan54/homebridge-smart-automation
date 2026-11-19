@@ -2,12 +2,12 @@
 
 # Homebridge Smart Automation
 
-A rules engine for Homebridge that watches and controls your existing accessories. Each rule is configured in the plugin's settings in the Homebridge UI.
+Do more with the accessories you already have, with no scripting and no tangle of Home app automations. Smart Automation adds automations that the Home app can't do on its own, and each one takes just a few clicks in the Homebridge UI. Get a nudge when the garage door is left open. Bring every outside light to full brightness when someone walks up, then put each light back exactly as it was. Run the AC when the basement gets humid. Turn your soffit lights into a Christmas display. Pick the automation, choose your accessories, and you're done.
 
 | Automation | What it does |
 | --- | --- |
 | Smart Light Group | Publishes a light that turns on several lights together, then restores each light's earlier state when turned off |
-| Christmas Lights | Publishes a switch that runs a Christmas pattern across a row of colour lights, such as soffit pot lights, and restores them when turned off |
+| Christmas Lights | Publishes a light that runs a Christmas pattern across a row of colour lights, such as soffit pot lights, and restores them when turned off |
 | Door Left Ajar | Publishes a contact sensor that opens when a door stays open too long, for use as a Home app trigger |
 | Humidity-controlled AC | Turns a target on above one humidity threshold and off below another |
 | Average Temperature Sensor | Publishes the average of several temperature sensors |

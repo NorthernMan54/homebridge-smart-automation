@@ -1,7 +1,8 @@
-import type { AverageTemperatureConfig, DoorAjarConfig, HumidityControlConfig, SecuritySystemConfig, SmartAutomationConfig, SmartAutomationMonitor, SmartAutomationRulesEngine, SmartLightGroupConfig } from './smart-automation.interfaces.js'
+import type { AverageTemperatureConfig, ChristmasLightsConfig, DoorAjarConfig, HumidityControlConfig, SecuritySystemConfig, SmartAutomationConfig, SmartAutomationMonitor, SmartAutomationRulesEngine, SmartLightGroupConfig } from './smart-automation.interfaces.js'
 
 import type { SmartAutomationLogger } from './smart-automation.logger.js'
 import { AverageTemperatureRulesEngine } from './rules/average-temperature.rules-engine.js'
+import { CHRISTMAS_PATTERNS, ChristmasLightsRulesEngine, clampBrightness, clampStepSeconds } from './rules/christmas-lights.rules-engine.js'
 import { clampMinutes, DoorAjarRulesEngine } from './rules/door-ajar.rules-engine.js'
 import { clampHumidity, HumidityControlRulesEngine } from './rules/humidity-control.rules-engine.js'
 import { SECURITY_DISARMED, SECURITY_NO_FAULT, SecuritySystemRulesEngine } from './rules/security-system.rules-engine.js'
@@ -100,6 +101,11 @@ export class SmartAutomationPlatform {
           ? ''
           : 's'}.`)
         this.configureSecuritySystem(accessory, automation)
+      } else if (automation.type === 'christmas-lights') {
+        this.log.info(`${automation.name}: ${automation.pattern} pattern on ${automation.uniqueIds.length} light${automation.uniqueIds.length === 1
+          ? ''
+          : 's'}, stepping every ${automation.stepSeconds}s.`)
+        this.configureChristmasLights(accessory, automation)
       } else {
         const rulesEngine = this.createRulesEngine(automation)
         this.log.info(`${automation.name}: configured ${automation.lightbulbType} trigger light for ${automation.uniqueIds.length} group light${automation.uniqueIds.length === 1
@@ -330,6 +336,76 @@ export class SmartAutomationPlatform {
     void engine.setTargetState(initialState)
   }
 
+  /**
+   * Publish the on/off light that runs a Christmas light pattern while on.
+   *
+   * It always starts off after a restart, so the lights are never left
+   * cycling with nothing saved to restore them to.
+   * @param accessory - the platform accessory to publish on
+   * @param automation - the configured rule
+   */
+  private configureChristmasLights(accessory: any, automation: ChristmasLightsConfig) {
+    const { Characteristic, Service } = this.api.hap
+    accessory.displayName = automation.name
+    accessory.context.automationId = automation.id
+
+    accessory.getService(Service.AccessoryInformation)
+      .setCharacteristic(Characteristic.Manufacturer, PLUGIN_NAME)
+      .setCharacteristic(Characteristic.Model, 'Smart Automation Christmas Lights')
+      .setCharacteristic(Characteristic.SerialNumber, automation.id)
+
+    // Early betas published a Switch, which a cached accessory may still carry
+    for (const legacyType of [
+      Service.Switch,
+      Service.ContactSensor,
+      Service.TemperatureSensor,
+      Service.SecuritySystem,
+    ]) {
+      const legacyService = accessory.getService(legacyType)
+      if (legacyService) {
+        accessory.removeService(legacyService)
+      }
+    }
+
+    const service = accessory.getService(Service.Lightbulb) || accessory.addService(Service.Lightbulb)
+    service.setCharacteristic(Characteristic.Name, automation.name)
+    // On/off only: a cached light group may have left colour or dimming behind
+    for (const extra of [
+      Characteristic.Brightness,
+      Characteristic.Hue,
+      Characteristic.Saturation,
+      Characteristic.ColorTemperature,
+    ]) {
+      const existing = service.characteristics.find((characteristic: any) => characteristic.UUID === extra.UUID)
+      if (existing) {
+        service.removeCharacteristic(existing)
+      }
+    }
+    const on = service.getCharacteristic(Characteristic.On)
+    on.removeAllListeners('set')
+    on.updateValue(false)
+
+    if (!(automation.enabled ?? true)) {
+      on.onSet(async () => {
+        on.updateValue(false)
+      })
+      return
+    }
+
+    const engine = new ChristmasLightsRulesEngine(automation, this.accessoryController, this.log)
+    this.monitors.push({
+      start: () => undefined,
+      stop: () => engine.stop(),
+    })
+    on.onSet(async (value: boolean) => {
+      this.log.info(`${automation.name}: light received ${value ? 'On' : 'Off'}.`)
+      await engine.setOn(Boolean(value))
+      if (Boolean(value) !== engine.isRunning()) {
+        on.updateValue(engine.isRunning())
+      }
+    })
+  }
+
   private configureLightbulbCharacteristics(
     accessory: any,
     lightService: any,
@@ -393,6 +469,7 @@ export class SmartAutomationPlatform {
         'humidity-control',
         'average-temperature',
         'security-system',
+        'christmas-lights',
       ].includes(automation?.type) && typeof automation.id === 'string')
       .map((automation) => {
         const shared = {
@@ -442,6 +519,18 @@ export class SmartAutomationPlatform {
             name: automation.name?.trim() || 'Security System',
             autoBypass: automation.autoBypass === true,
           } as SecuritySystemConfig
+        }
+
+        if (automation.type === 'christmas-lights') {
+          return {
+            ...shared,
+            name: automation.name?.trim() || 'Christmas Lights',
+            pattern: CHRISTMAS_PATTERNS.includes(automation.pattern)
+              ? automation.pattern
+              : 'classic',
+            stepSeconds: clampStepSeconds(automation.stepSeconds),
+            brightness: clampBrightness(automation.brightness),
+          } as ChristmasLightsConfig
         }
 
         return {

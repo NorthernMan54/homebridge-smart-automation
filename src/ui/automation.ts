@@ -1,5 +1,5 @@
 import type { PickerService } from '../homebridge-ui/accessory-lister.js'
-import type { SmartAutomationConfig } from '../smart-automation.interfaces.js'
+import type { ChristmasPattern, SmartAutomationConfig } from '../smart-automation.interfaces.js'
 
 import { PLUGIN_NAME } from '../settings.js'
 
@@ -19,10 +19,14 @@ export interface Draft {
   offHumidity?: number
   removeAfterMinutes?: number
   autoBypass?: boolean
+  pattern?: ChristmasPattern
+  stepSeconds?: number
+  brightness?: number
 }
 
 export const AUTOMATION_TYPES: AutomationType[] = [
   'average-temperature',
+  'christmas-lights',
   'door-ajar',
   'humidity-control',
   'security-system',
@@ -31,6 +35,7 @@ export const AUTOMATION_TYPES: AutomationType[] = [
 
 const SOURCE_TYPES: Record<AutomationType, string[]> = {
   'average-temperature': ['TemperatureSensor', 'Thermostat', 'HeaterCooler'],
+  'christmas-lights': ['Lightbulb'],
   'door-ajar': [
     'GarageDoorOpener',
     'Door',
@@ -46,6 +51,8 @@ const SOURCE_TYPES: Record<AutomationType, string[]> = {
 const REQUIRED_CHARACTERISTIC: Partial<Record<AutomationType, string>> = {
   'average-temperature': 'CurrentTemperature',
   'humidity-control': 'CurrentRelativeHumidity',
+  // Only colour lights can show a pattern
+  'christmas-lights': 'Hue',
 }
 
 const TARGET_TYPES = [
@@ -115,7 +122,27 @@ function toHumidity(value: unknown, fallback: number): number {
  * @param draft - the editor state
  * @param id - generates an id for a new rule
  */
-export function toAutomation(draft: Draft, id: () => string = () => globalThis.crypto.randomUUID()): SmartAutomationConfig {
+/**
+ * A random v4 UUID for a new rule.
+ *
+ * ⚠️ `crypto.randomUUID` only exists in a secure context (HTTPS or localhost),
+ * and the Homebridge UI is usually opened over plain http on a LAN address,
+ * where calling it throws and the Create button silently does nothing.
+ * `getRandomValues` is available everywhere.
+ * @param crypto - the Web Crypto object, replaceable in tests
+ */
+export function newId(crypto: Partial<Crypto> = globalThis.crypto): string {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  const bytes = crypto.getRandomValues!(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0F) | 0x40
+  bytes[8] = (bytes[8] & 0x3F) | 0x80
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
+export function toAutomation(draft: Draft, id: () => string = () => newId()): SmartAutomationConfig {
   const uniqueIds = [
     ...new Set(draft.uniqueIds),
   ]
@@ -157,6 +184,15 @@ export function toAutomation(draft: Draft, id: () => string = () => globalThis.c
         type: draft.type,
         uniqueIds,
         autoBypass: draft.autoBypass === true,
+      }
+    case 'christmas-lights':
+      return {
+        ...shared,
+        type: draft.type,
+        uniqueIds,
+        pattern: draft.pattern || 'classic',
+        stepSeconds: Math.min(Math.max(Math.round(Number(draft.stepSeconds) || 2), 1), 60),
+        brightness: Math.min(Math.max(Math.round(Number(draft.brightness) || 100), 1), 100),
       }
     default:
       return {

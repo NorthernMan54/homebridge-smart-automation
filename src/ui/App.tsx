@@ -44,6 +44,13 @@ function summary(automation: SmartAutomationConfig): string {
         unit: unit(count, 'sensor'),
         remove: automation.removeAfterMinutes,
       })
+    case 'christmas-lights':
+      return t('summary.christmas_lights', {
+        count,
+        unit: unit(count, 'light'),
+        pattern: t(`pattern.${automation.pattern}`),
+        step: automation.stepSeconds,
+      })
     case 'security-system':
       return t(automation.autoBypass ? 'summary.security_system_auto_bypass' : 'summary.security_system', {
         count,

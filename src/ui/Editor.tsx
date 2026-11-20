@@ -4,6 +4,7 @@ import type { AccessoryLayoutRoom } from './rooms.js'
 
 import { useState } from 'preact/hooks'
 
+import { CHRISTMAS_PATTERNS } from '../rules/christmas-lights.rules-engine.js'
 import { AUTOMATION_TYPES, canSave, isControlTarget, isSingleSource, isSourceSelectable } from './automation.js'
 import { t } from './i18n.js'
 import { Picker } from './Picker.js'
@@ -29,6 +30,7 @@ function NumberField({ id, label, help, value, min, max, onChange }: { id: strin
 
 const SOURCE_TITLES: Record<AutomationType, string> = {
   'average-temperature': 'picker.temperature_sensors',
+  'christmas-lights': 'picker.christmas_lights',
   'door-ajar': 'picker.door',
   'humidity-control': 'picker.humidity_sensor',
   'security-system': 'picker.security_sensors',
@@ -119,6 +121,20 @@ export function Editor({ initial, services, rooms, accessoryNotice, onCancel, on
           </select>
           <small class="form-text grey-text">{t('help.published_light_type')}</small>
         </div>
+      )}
+      {draft.type === 'christmas-lights' && (
+        <>
+          <div class="mb-3">
+            <label class="form-label" for="sa-pattern">{t('field.pattern')}</label>
+            <select id="sa-pattern" class="custom-select form-select" value={draft.pattern || 'classic'} onChange={e => update({ pattern: e.currentTarget.value as Draft['pattern'] })}>
+              {CHRISTMAS_PATTERNS.map(pattern => <option value={pattern} key={pattern}>{t(`pattern.${pattern}`)}</option>)}
+            </select>
+          </div>
+          <div class="row">
+            <NumberField id="sa-step" label={t('field.step_seconds')} help={t('help.step_seconds')} min={1} max={60} value={draft.stepSeconds ?? 2} onChange={stepSeconds => update({ stepSeconds })} />
+            <NumberField id="sa-brightness" label={t('field.brightness')} min={1} max={100} value={draft.brightness ?? 100} onChange={brightness => update({ brightness })} />
+          </div>
+        </>
       )}
       {draft.type === 'security-system' && (
         <div class="form-check mb-3">

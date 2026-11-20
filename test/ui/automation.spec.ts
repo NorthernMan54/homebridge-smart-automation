@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { canSave, isControlTarget, isSourceSelectable, newDraft, toAutomation } from '../../src/ui/automation.js'
+import { canSave, isControlTarget, isSourceSelectable, newDraft, newId, toAutomation } from '../../src/ui/automation.js'
 
 function service(type: string, characteristics: any[] = [], extra = {}) {
   return {
@@ -120,5 +120,14 @@ describe('toAutomation', () => {
     expect(rule.lightbulbType).toBeUndefined()
     expect(rule.openMinutes).toBe(1440)
     expect(rule.id).toBe('k')
+  })
+})
+
+describe('newId', () => {
+  it('makes a v4 UUID without randomUUID, as on a plain-http LAN address', () => {
+    const id = newId({
+      getRandomValues: (bytes: any) => globalThis.crypto.getRandomValues(bytes),
+    } as any)
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
   })
 })

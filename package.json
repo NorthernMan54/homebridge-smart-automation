@@ -2,8 +2,8 @@
   "name": "homebridge-smart-automation",
   "displayName": "Homebridge Smart Automation",
   "type": "module",
-  "version": "0.1.0",
-  "description": "Rules engine for Homebridge: smart light groups, door-left-ajar alerts, humidity control, averaged temperature sensors and a virtual security system.",
+  "version": "0.1.1",
+  "description": "Rules engine for Homebridge: smart light groups, Christmas light patterns, door-left-ajar alerts, humidity control, averaged temperature sensors and a virtual security system.",
   "author": "Northern Man",
   "license": "MIT",
   "homepage": "https://github.com/NorthernMan54/homebridge-smart-automation#readme",
@@ -71,6 +71,7 @@
     }
   },
   "allowScripts": {
-    "esbuild@0.28.2": true
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true
   }
 }

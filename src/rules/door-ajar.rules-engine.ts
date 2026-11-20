@@ -11,9 +11,6 @@ import type { DoorAjarConfig, SmartAutomationAccessoryController, SmartAutomatio
  */
 const MAX_MINUTES = 1440
 
-/** How long the sensor drops back to closed to make a repeat alert land. */
-const RETRIGGER_PULSE_MS = 1000
-
 /**
  * Whether a door-like service is currently anything other than shut.
  *
@@ -75,17 +72,21 @@ export function clampMinutes(minutes: unknown, fallback: number): number {
  * The published accessory is a contact sensor rather than a switch so it can
  * be used directly as a HomeKit automation trigger, and because HomeKit fires
  * an automation on a *change*, a repeat alert has to drop the sensor back to
- * closed for a moment before opening it again — otherwise the second and
- * later alerts would never fire.
+ * closed before opening it again — otherwise the second and later alerts
+ * would never fire. Each repeat interval is split in half: the sensor stays
+ * open for the first half and closed for the second, so the Home app shows a
+ * steady open/closed rhythm instead of a one-second flicker.
  */
 export class DoorAjarRulesEngine implements SmartAutomationMonitor<boolean> {
   private publish: ((tripped: boolean) => void) | null = null
   private timer: ReturnType<typeof setTimeout> | null = null
-  private pulseTimer: ReturnType<typeof setTimeout> | null = null
   private unsubscribe: (() => void) | null = null
   private openSince: number | null = null
   private lastAlertAt: number | null = null
+  /** Whether the alert is active (the door has been open past the limit). */
   private tripped = false
+  /** What the published sensor currently shows while the alert is active. */
+  private sensorOpen = false
 
   constructor(
     private readonly config: DoorAjarConfig,
@@ -96,6 +97,7 @@ export class DoorAjarRulesEngine implements SmartAutomationMonitor<boolean> {
 
   public start(publish: (tripped: boolean) => void): void {
     this.publish = publish
+    this.sensorOpen = false
     publish(false)
     this.log.info(`${this.config.name}: watching for the door being left open longer than ${this.openMinutes()} minute${this.openMinutes() === 1
       ? ''
@@ -112,10 +114,6 @@ export class DoorAjarRulesEngine implements SmartAutomationMonitor<boolean> {
     if (this.timer) {
       clearTimeout(this.timer)
       this.timer = null
-    }
-    if (this.pulseTimer) {
-      clearTimeout(this.pulseTimer)
-      this.pulseTimer = null
     }
     this.unsubscribe?.()
     this.unsubscribe = null
@@ -168,16 +166,25 @@ export class DoorAjarRulesEngine implements SmartAutomationMonitor<boolean> {
         }
         this.log.info(`${this.config.name}: the door has been open for ${Math.round(openForMs / 60_000)} minutes.`)
         this.trip(now)
-        this.scheduleTick(this.repeatMinutes() * 60_000)
+        this.scheduleTick(this.halfRepeatMs())
         return
       }
 
-      if (this.lastAlertAt !== null && now - this.lastAlertAt >= this.repeatMinutes() * 60_000) {
+      if (this.lastAlertAt === null) {
+        return
+      }
+      const repeatMs = this.repeatMinutes() * 60_000
+      const sinceAlertMs = now - this.lastAlertAt
+
+      if (sinceAlertMs >= repeatMs) {
         this.log.info(`${this.config.name}: the door is still open.`)
-        this.retrigger(now)
-        this.scheduleTick(this.repeatMinutes() * 60_000)
-      } else if (this.lastAlertAt !== null) {
-        this.scheduleTick(this.repeatMinutes() * 60_000 - (now - this.lastAlertAt))
+        this.trip(now)
+        this.scheduleTick(this.halfRepeatMs())
+      } else if (sinceAlertMs >= this.halfRepeatMs()) {
+        this.showSensor(false)
+        this.scheduleTick(repeatMs - sinceAlertMs)
+      } else {
+        this.scheduleTick(this.halfRepeatMs() - sinceAlertMs)
       }
     } catch (error: any) {
       this.log.warn(`${this.config.name}: could not check the door: ${error?.message || error}`)
@@ -206,13 +213,9 @@ export class DoorAjarRulesEngine implements SmartAutomationMonitor<boolean> {
       clearTimeout(this.timer)
       this.timer = null
     }
-    if (this.pulseTimer) {
-      clearTimeout(this.pulseTimer)
-      this.pulseTimer = null
-    }
     if (this.tripped) {
       this.tripped = false
-      this.publish?.(false)
+      this.showSensor(false)
     }
   }
 
@@ -227,26 +230,30 @@ export class DoorAjarRulesEngine implements SmartAutomationMonitor<boolean> {
     this.timer.unref?.()
   }
 
-  private trip(now: number): void {
-    this.tripped = true
-    this.lastAlertAt = now
-    this.publish?.(true)
+  /** Half the repeat interval: how long each open, then closed, phase lasts. */
+  private halfRepeatMs(): number {
+    return this.repeatMinutes() * 30_000
   }
 
   /**
-   * Fire the alert again by closing the sensor for a moment and reopening it,
-   * so a HomeKit automation watching for "opens" sees a fresh change.
+   * Raise the alert: open the sensor and start a new repeat interval.
    * @param now - the current time, so the next repeat is measured from here
    */
-  private retrigger(now: number): void {
+  private trip(now: number): void {
+    this.tripped = true
     this.lastAlertAt = now
-    this.publish?.(false)
-    this.pulseTimer = setTimeout(() => {
-      this.pulseTimer = null
-      if (this.tripped) {
-        this.publish?.(true)
-      }
-    }, RETRIGGER_PULSE_MS)
-    this.pulseTimer.unref?.()
+    this.showSensor(true)
+  }
+
+  /**
+   * Publish the sensor state, skipping a value it already shows.
+   * @param open - whether the sensor should read open
+   */
+  private showSensor(open: boolean): void {
+    if (this.sensorOpen === open) {
+      return
+    }
+    this.sensorOpen = open
+    this.publish?.(open)
   }
 }

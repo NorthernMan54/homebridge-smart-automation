@@ -70,6 +70,37 @@ describe('app', () => {
     expect(await screen.findByText(/unsaved changes/)).toBeTruthy()
   })
 
+  it('creates a Christmas Lights rule', async () => {
+    const colour = (id: string, serviceName: string) => ({
+      ...light(id, serviceName),
+      characteristics: [
+        { type: 'Hue', canWrite: true },
+      ],
+    })
+    const homebridge = host([
+      { platform: 'smart-automation' },
+    ], [
+      colour('front', 'Front Soffit'),
+      colour('side', 'Side Soffit'),
+    ])
+    render(<App homebridge={homebridge as any} />)
+
+    fireEvent.click(await screen.findByText('Add automation'))
+    fireEvent.change(screen.getByLabelText('Automation Type'), {
+      target: { value: 'christmas-lights' },
+    })
+    fireEvent.click(await screen.findByLabelText(/Front Soffit/))
+    fireEvent.click(await screen.findByLabelText(/Side Soffit/))
+    fireEvent.click(screen.getByText('Create automation'))
+
+    await waitFor(() => expect(homebridge.updatePluginConfig).toHaveBeenCalled())
+    expect(homebridge.updatePluginConfig.mock.calls[0][0][0].smartAutomations[0]).toMatchObject({
+      type: 'christmas-lights',
+      uniqueIds: ['front', 'side'],
+      pattern: 'classic',
+    })
+  })
+
   it('creates the config block on first use', async () => {
     const homebridge = host([])
     render(<App homebridge={homebridge} />)
